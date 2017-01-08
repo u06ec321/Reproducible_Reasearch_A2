@@ -1,0 +1,80 @@
+
+title: "Analysis on NOAA Storm Database"
+author: "Bikash Singh"
+date: "1 January 2017"
+output: html_document
+---
+The Basic Goal on this analysis is to explore the NOAA Storm Database and answer some basic questions about severe weather events that impact the health and Finance of People the most.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###Step1:-
+Download the data and read it into R
+```{r code, cache=TRUE}
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2","./repdata_data_StormData.csv.bz2")
+Storm_data<-read.csv("repdata_data_StormData.csv.bz2",header=T,as.is=T)
+```
+###Step2:-
+Analyzing the data for maximum Fatalities and Injuries and Plotting it
+
+```{r code to analyze maximum Injuries and Fatalities by Events, cache=TRUE}
+library(ggplot2)
+Event_Fatalities<-aggregate(Storm_data$FATALITIES,by=list(Storm_data$EVTYPE),FUN=sum)
+Event_Injuries<-aggregate(Storm_data$INJURIES,by=list(Storm_data$EVTYPE),FUN=sum)
+names(Event_Fatalities)<-c("EVENT","FATALITIES")
+names(Event_Injuries)<-c("EVENT","INJURIES")
+Event_Injuries<-head(Event_Injuries[order(Event_Injuries$INJURIES,decreasing = TRUE),])
+Event_Fatalities<-head(Event_Fatalities[order(Event_Fatalities$FATALITIES,decreasing = TRUE),])
+Injuries_plot<-ggplot(data=Event_Injuries,aes(x=EVENT,y=INJURIES))+ geom_bar(stat="identity") +labs(title="Top 6 Events for Injuries")
+Injuries_plot
+Fatalities_Plot<-ggplot(data=Event_Fatalities,aes(x=EVENT,y=FATALITIES)) + geom_bar(stat="identity") + labs(title="Top 6 Events for Fatalities")
+Fatalities_Plot
+```
+
+
+###Step3:-
+Cleaning the Data For Total Economic Loss and plotting it
+
+```{r code to plot clean data for maximum economic loss, cache=TRUE}
+Storm_data$PROPDMGEXP<-gsub("K","1000",Storm_data$PROPDMGEXP)
+Storm_data$PROPDMGEXP<-gsub("m","1000000",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("B","1000000000",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("8","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("7","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("H","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("3","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("2","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("4","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("6","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("5","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("\\?","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data$PROPDMGEXP<-gsub("-","0",Storm_data$PROPDMGEXP,ignore.case = T)
+Storm_data[Storm_data$PROPDMGEXP=="+",]<-"0"
+Storm_data[Storm_data$PROPDMGEXP=="1",]<-"0"
+Storm_data[Storm_data$PROPDMGEXP=="",]<-"0"
+Storm_data$CROPDMGEXP<-gsub("K","1000",Storm_data$CROPDMGEXP,ignore.case = T)
+Storm_data$CROPDMGEXP<-gsub("m","1000000",Storm_data$CROPDMGEXP,ignore.case = T)
+Storm_data$CROPDMGEXP<-gsub("B","1000000000",Storm_data$CROPDMGEXP,ignore.case = T)
+Storm_data$CROPDMGEXP<-gsub("\\?","0",Storm_data$CROPDMGEXP,ignore.case = T)
+Storm_data[Storm_data$CROPDMGEXP=="",]<-"0"
+Storm_data$CROPDMGEXP<-as.numeric(Storm_data$CROPDMGEXP)
+Storm_data$PROPDMGEXP<-as.numeric(Storm_data$PROPDMGEXP)
+Storm_data$PROPDMG<-as.numeric(Storm_data$PROPDMG)
+Storm_data$CROPDMG<-as.numeric(Storm_data$CROPDMG)
+Storm_data$TOTAL_ECONOMIC_LOSS<-Storm_data$PROPDMG*Storm_data$PROPDMGEXP + Storm_data$CROPDMG*Storm_data$CROPDMGEXP
+Total_Economic_loss_by_event<-aggregate(Storm_data$TOTAL_ECONOMIC_LOSS,by=list(Storm_data$EVTYPE),FUN=sum)
+names(Total_Economic_loss_by_event)<-c("Event","Economic_Loss")
+Total_Economic_loss_by_event<-head(Total_Economic_loss_by_event[order(Total_Economic_loss_by_event$Economic_Loss,decreasing=TRUE),])
+Economic_loss_plot<-ggplot(data=Total_Economic_loss_by_event,aes(x=Event,y=Economic_Loss))
+Economic_loss_plot+geom_bar(stat="identity")+xlab("EVENT")+ylab("ECONOMIC LOSS")+labs(title="TOP 6 ECONOMIC LOSS BY EVENTS")
+```
+
+####Please find below the results of the above analysis:-
+
+1.The Maximum Fatalities is from `r Event_Fatalities[Event_Fatalities$FATALITIES == max(Event_Fatalities$FATALITIES),]$EVENT` and the Number of deaths is `r max(Event_Fatalities$FATALITIES)`.
+
+2.The Maximum Injuries is from `r Event_Injuries[Event_Injuries$INJURIES == max(Event_Injuries$INJURIES),]$EVENT` and the Number of Injuires is `r max(Event_Injuries$INJURIES)`.
+
+3.The Maximum economic loss is from `r Total_Economic_loss_by_event[Total_Economic_loss_by_event$Economic_Loss == max(Total_Economic_loss_by_event$Economic_Loss),]$Event` and the value of loss is `r max(Total_Economic_loss_by_event$Economic_Loss)`.
